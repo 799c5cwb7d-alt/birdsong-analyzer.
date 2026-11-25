@@ -1,6 +1,6 @@
 /* Birdsong Analyzer — fonctionnement hors connexion.
    La page (chiffrée) et ses bibliothèques sont gardées sur l'appareil ; avec du réseau, la dernière version est reprise. */
-const CACHE = 'birdsong-e4324d1b72d1';
+const CACHE = 'birdsong-b09efedf0643';
 const SHELL = ['./', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 const LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'];
 const KEEP = /^https:\/\/(cdnjs\.cloudflare\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)\//;
