@@ -1,16 +1,16 @@
 # Données ouvertes — sons d'oiseaux de France
 
-`birdsong_donnees_ouvertes.py` télécharge par lots (20 Go au plus) les sons d'oiseaux de France publiés sur
-iNaturalist et xeno-canto (via GBIF), les mesure avec la même méthode que l'appli, écrit les résultats,
-supprime les sons, puis passe au lot suivant. Les résultats s'additionnent d'un lot à l'autre.
+**Lancer :** double-clic sur `collecter.bat` (Windows) ou `collecter.command` (Mac).
+La première fois, il installe numpy, scipy et ffmpeg (sous Windows, relance-le une fois après l'installation de ffmpeg).
 
-Installation (une fois) : Python 3.9+, puis `python -m pip install numpy scipy`, et ffmpeg (`winget install ffmpeg`).
+Ce qu'il fait, en boucle jusqu'à la fin : inventaire des sons d'oiseaux de France publiés sur iNaturalist et
+xeno-canto (via GBIF) → téléchargement d'un lot (20 Go au plus) → mesure avec la même méthode que l'appli →
+résultats dans ce dossier (`birdsong-opendata.json`, chargé tout seul par l'appli) et envoi sur GitHub →
+suppression des sons → lot suivant. Les résultats s'additionnent d'un lot à l'autre.
 
-```
-python birdsong_donnees_ouvertes.py --dossier D:\birdsong-donnees --essai 10
-python birdsong_donnees_ouvertes.py --dossier D:\birdsong-donnees --copie-vers "C:\...\birdsong-analyzer.\donnees-ouvertes"
-```
-
-Le fichier `birdsong-opendata.json` placé dans ce dossier est chargé automatiquement par l'appli
-(feuille 🌍 Données ouvertes) pour tous les profils. Il ne contient que des mesures ; les sons restent
-la propriété de leurs auteurs (licences Creative Commons, auteur et lien de chaque son dans le tableau CSV).
+- Sons, base de suivi et tableaux CSV : dossier `birdsong-donnees` de ton dossier personnel (Windows : `C:\Users\<toi>\birdsong-donnees`).
+  Pour un autre disque : `collecter.bat --dossier D:\birdsong-donnees`.
+- Arrêt : Ctrl+C. Relancer reprend là où c'était arrêté.
+- iNaturalist limite les téléchargements (5 Go/heure, 24 Go/jour) : le script reste en dessous tout seul.
+- Les sons restent la propriété de leurs auteurs (licences Creative Commons) ; seules des mesures sont gardées,
+  avec l'auteur, la licence et le lien de chaque son dans `mesures-par-enregistrement.csv`.

@@ -65,7 +65,7 @@ except ImportError:
     print("Il manque numpy ou scipy. Installe-les avec :  python -m pip install numpy scipy")
     sys.exit(1)
 
-VERSION = "1.1"
+VERSION = "1.2"
 MEAS_VER = 46                       # version de la méthode de mesure de Birdsong Analyzer reproduite ici
 
 GBIF = "https://api.gbif.org/v1"
@@ -1111,10 +1111,45 @@ def exporter(db, args, flog):
         try:
             os.makedirs(args.copie_vers, exist_ok=True)
             shutil.copy2(dest, os.path.join(args.copie_vers, 'birdsong-opendata.json'))
+            if args.git:
+                envoyer_github(args.copie_vers, out['inventory']['measured'], flog)
         except OSError as e:
             log(f"Copie vers {args.copie_vers} impossible : {e}", flog)
     log(f"Résultats intégrés : {out['inventory']['measured']} sons mesurés sur {out['inventory']['total']} · "
         f"{len(especes)} espèces · {sum(len(g['c']) for g in groups.values())} cris de référence → {dest}", flog)
+
+
+def envoyer_github(dossier, n_mesures, flog):
+    """--git : enregistre birdsong-opendata.json dans le dépôt (clone git) et l'envoie sur GitHub.
+    Seul ce fichier est concerné ; un échec (pas de réseau, pas d'accès) n'arrête pas la collecte."""
+    if not shutil.which('git'):
+        log("git introuvable : résultats copiés dans le dossier de l'appli, mais pas envoyés sur GitHub.", flog)
+        return
+
+    def g(*a, t=120):
+        return subprocess.run(['git', *a], capture_output=True, text=True, timeout=t)
+    try:
+        top = g('-C', dossier, 'rev-parse', '--show-toplevel')
+        if top.returncode:
+            log(f"{dossier} n'est pas dans un clone git du dépôt : résultats non envoyés sur GitHub.", flog)
+            return
+        root = top.stdout.strip()
+        rel = os.path.relpath(os.path.join(dossier, 'birdsong-opendata.json'), root).replace(os.sep, '/')
+        ident = [] if g('-C', root, 'config', 'user.email').stdout.strip() else \
+            ['-c', 'user.name=Birdsong Analyzer (collecte)', '-c', 'user.email=birdsong@localhost']
+        g('-C', root, 'add', '--', rel)
+        if g('-C', root, 'diff', '--cached', '--quiet', '--', rel).returncode == 0:
+            return                                          # rien de nouveau
+        c = g(*ident, '-C', root, 'commit', '-q', '-m', f'Données ouvertes : {n_mesures} sons mesurés', '--', rel)
+        if c.returncode:
+            log(f"Enregistrement git impossible : {(c.stderr or c.stdout).strip()[:200]}", flog)
+            return
+        g('-C', root, 'pull', '--rebase', '--autostash', '-q', t=180)
+        p = g('-C', root, 'push', '-q', t=600)
+        log('Résultats envoyés sur GitHub.' if p.returncode == 0 else
+            f"Envoi sur GitHub impossible pour l'instant ({(p.stderr or '').strip()[:160]}) : nouvel essai au prochain lot.", flog)
+    except Exception as e:  # noqa
+        log(f"Envoi sur GitHub impossible : {e}", flog)
 
 
 def fnum(v, nd=0):
@@ -1183,6 +1218,7 @@ def main():
     ap.add_argument('--maj-inventaire', action='store_true', help='relire GBIF pour ajouter les nouveaux sons publiés')
     ap.add_argument('--exporter', action='store_true', help='seulement régénérer les résultats à partir de ce qui est déjà mesuré')
     ap.add_argument('--copie-vers', default='', help='dossier où copier birdsong-opendata.json après chaque lot (ex. ton dépôt GitHub)')
+    ap.add_argument('--git', action='store_true', help='après chaque lot, envoyer birdsong-opendata.json sur GitHub (avec --copie-vers dans le clone du dépôt)')
     ap.add_argument('--processus', type=int, default=max(1, (os.cpu_count() or 2) - 1), help='processus de mesure en parallèle')
     ap.add_argument('--contact', default='', help='ton e-mail, ajouté à l’identification du script auprès des serveurs (recommandé)')
     ap.add_argument('--gain', type=float, default=12.0, help='gain (curseur « Gain » de l’appli, 12)')
